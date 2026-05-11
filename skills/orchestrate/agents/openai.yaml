@@ -1,0 +1,7 @@
+interface:
+  display_name: "Orchestrate"
+  short_description: "Coordinate role agents and PR lifecycle"
+  default_prompt: "Use $orchestrate to coordinate this work with available role agents, fallback role references, and proof-first handoffs."
+
+policy:
+  allow_implicit_invocation: true
