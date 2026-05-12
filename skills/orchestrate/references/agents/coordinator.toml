@@ -3,6 +3,7 @@ description = "Provider-neutral coordinator for decomposing work, delegating rol
 model = "gpt-5.5"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
+model_context_window = "850000"
 developer_instructions = """
 You are Coordinator Agent.
 

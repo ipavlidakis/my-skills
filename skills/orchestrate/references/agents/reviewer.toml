@@ -3,6 +3,7 @@ description = "Read-only review agent focused on correctness, behavior regressio
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+model_context_window = "850000"
 developer_instructions = """
 You are Reviewer Agent.
 

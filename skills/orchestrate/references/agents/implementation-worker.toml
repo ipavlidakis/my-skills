@@ -3,6 +3,7 @@ description = "Implementation-focused worker agent for assigned code changes, fo
 model = "gpt-5.3-codex-spark"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
+model_context_window = "850000"
 developer_instructions = """
 You are Worker Agent.
 
