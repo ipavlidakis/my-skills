@@ -33,6 +33,8 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 
 **Location.** Prefer the active agent runtime's managed canvas directory when one exists. If no such directory exists, write outside the reviewed repository under `~/.agent-artifacts/pr-review-canvas/<workspace-slug>/<name>.canvas.tsx`. Do not dirty the reviewed repository with generated review artifacts unless the user explicitly asks. Use a descriptive kebab-case filename ending in `.canvas.tsx`, or the active runtime's required TSX extension.
 
+**Template.** Start from `assets/pr-review-canvas-template.canvas.tsx` unless the active runtime requires a different component shape. Copy the template to the output canvas path and replace the data arrays first. Reuse its components for summary stats, required sections, diff panels, flow diagrams, trace tables, mechanical lists, risks, empty states, and shared styling. Extend it only for PR-specific needs.
+
 **File rules:**
 
 - Exactly one TSX canvas file. Never create helper files, style files, or supporting modules.
@@ -51,8 +53,9 @@ Every PR review canvas must include these visible top-level sections in this ord
 1. **Core logic** - behavior, algorithms, state transitions, API surface, tricky business rules. Show the richest diff/context here.
 2. **Wiring & integration** - routes, dependency injection, config, call sites, app lifecycle hooks, build/test plumbing that connects the core logic.
 3. **Boilerplate & mechanical** - generated code, formatting, import churn, renames, type re-exports, project metadata. Summarize file names and stats; expand only when relevant.
+4. **Risks** - correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this concise and point each risk to the relevant section or hunk.
 
-If one section has no entries, render it with `None identified`. Do not omit it. Other views such as summary cards, risk callouts, flow diagrams, or file stats are additive and must not replace these sections.
+If one section has no entries, render it with `None identified`. Do not omit it. Other views such as summary cards, inline risk callouts, flow diagrams, or file stats are additive and must not replace these sections. If you add inline risk callouts near code, also summarize them in the top-level **Risks** section.
 
 ### 3. Serve and open the canvas
 
@@ -88,7 +91,7 @@ Not everything deserves equal treatment. Primary content gets more space, larger
 
 Use flow diagrams when they make review faster: state transitions, request pipelines, event ordering, dependency direction, retry paths, permission gates, data transformations, or old-vs-new control flow. Keep diagrams small and close to the relevant diff. Prefer runtime DAG or flow components when available; otherwise use simple TSX/SVG primitives inside the single canvas file.
 
-Do not diagram obvious straight-line code. A weak diagram is worse than none. Diagrams are supporting material; they must sit inside or next to the relevant required section instead of replacing the section structure.
+Do not diagram obvious straight-line code. A weak diagram is worse than none. Diagrams are supporting material; they must sit inside or next to the relevant required section instead of replacing the section structure or the top-level **Risks** section.
 
 ### Slop patterns - forbidden
 
@@ -108,7 +111,7 @@ Before returning the canvas link, verify:
 
 1. Does the layout have visual hierarchy? One thing should stand out.
 2. Is there variety in the composition? Not just a single column of uniform blocks.
-3. Are `Core logic`, `Wiring & integration`, and `Boilerplate & mechanical` present as visible top-level sections in that order?
+3. Are `Core logic`, `Wiring & integration`, `Boilerplate & mechanical`, and `Risks` present as visible top-level sections in that order?
 4. Did you add a flow diagram only when it improves review comprehension, and does it support rather than replace a required section?
 5. Slop check: scan for the forbidden patterns above.
 6. Does the preview URL render the TSX canvas successfully?

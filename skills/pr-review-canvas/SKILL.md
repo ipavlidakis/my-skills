@@ -16,6 +16,8 @@ Build a TSX canvas that presents a PR diff reorganized for reviewer comprehensio
 
 Read `references/agent-canvas.md` first. It contains the TSX canvas policy, design guidance, flow-diagram guidance, slop rules, self-check, preview server requirements, and open-link requirements you must follow. The delivered review canvas must be a `.canvas.tsx` or runtime-equivalent `.tsx` file served through the runtime preview path and opened in the in-app browser.
 
+Start from `assets/pr-review-canvas-template.canvas.tsx` unless the active runtime requires a different component shape. Copy it to the output canvas path, replace the data arrays, and extend the included components only where the specific PR needs it. Keep the required sections and style system intact unless the diff clearly needs a different representation.
+
 ## Gather the diff
 
 Expect a GitHub PR link (a full URL like `https://github.com/<owner>/<repo>/pull/<n>`, or an equivalent `gh`-resolvable reference). Use `gh pr diff <pr>` to collect every file's path, additions, deletions, and hunks.
@@ -29,8 +31,9 @@ Do **not** present files in alphabetical or tree order. Reorganize into sections
 1. **Core logic** - New behavior, algorithm changes, state transitions, API surface changes. Show full diffs with surrounding context.
 2. **Wiring & integration** - Route registration, dependency injection, config plumbing that connects the core logic. Condensed - enough to confirm correctness.
 3. **Boilerplate & mechanical** - Import reordering, renames, generated code, formatting, type re-exports. Summarize as a list of file names and stats. No inline diffs unless specifically relevant.
+4. **Risks** - Correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this section concise and link each risk back to the relevant core/wiring/mechanical section when possible.
 
-These three sections are mandatory top-level canvas sections. Keep the exact section concepts visible even if you add summaries, diagrams, timelines, tabs, or other creative views. Lead with core logic. The reviewer's attention is freshest at the top.
+These four sections are mandatory top-level canvas sections. Keep the exact section concepts visible even if you add summaries, diagrams, timelines, tabs, or other creative views. Lead with core logic. The reviewer's attention is freshest at the top.
 
 If a section is empty, keep the section and state `None identified` so the reviewer knows the category was considered. Do not replace these sections with only a file list, diagram, narrative summary, or risk table.
 
@@ -50,13 +53,13 @@ Use this for genuinely surprising behavior changes, not every core hunk.
 
 When the diff changes a state transition, request pipeline, event ordering, dependency direction, retry path, permission gate, data transformation, or old-vs-new control flow, add a small flow diagram near the relevant diff. The diagram should make the review faster than prose alone. Keep it focused: a few nodes, clear arrows, and one sentence explaining the key path or divergence.
 
-Do not diagram obvious straight-line code. Reserve diagrams for places where reviewers would otherwise have to reconstruct flow mentally. Diagrams are supporting material; they must not replace the required core/wiring/mechanical sections.
+Do not diagram obvious straight-line code. Reserve diagrams for places where reviewers would otherwise have to reconstruct flow mentally. Diagrams are supporting material; they must not replace the required core/wiring/mechanical/risk sections.
 
 ## Call attention to tricky things
 
 When a hunk contains something surprising, risky, or easy to miss, visually separate it from the surrounding diff and pair it with a short tag (e.g. "Subtle", "Breaking", "Race condition", "Perf") and a one-sentence explanation so the reviewer sees the concern and the code together.
 
-Reserve these callouts for genuinely tricky items - overuse destroys signal.
+Reserve these callouts for genuinely tricky items - overuse destroys signal. If the callout is a real review risk, also include it in the top-level **Risks** section.
 
 ## Tone and content
 
