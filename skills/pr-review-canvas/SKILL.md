@@ -1,7 +1,7 @@
 ---
 name: pr-review-canvas
 description: >-
-  Render a PR diff review as a self-contained HTML agent canvas that groups changes by
+  Render a PR diff review as a TSX agent canvas that groups changes by
   reviewer importance, separates boilerplate from core logic, and
   highlights tricky or unexpected code. Use when reviewing a pull
   request, summarizing a diff for review, or when the user asks for a
@@ -10,11 +10,11 @@ description: >-
 
 # PR Review Canvas
 
-Build a self-contained HTML canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
+Build a TSX canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
 
 ## Prerequisites
 
-Read `references/agent-canvas.md` first. It contains the HTML artifact policy, optional TSX preview guidance, design guidance, slop rules, self-check, local server requirements, and open-link requirements you must follow. If the active agent runtime exposes a canvas SDK, you may also serve a `.tsx` preview, but the delivered review canvas must include a self-contained `.html` file served over localhost and opened in the in-app browser.
+Read `references/agent-canvas.md` first. It contains the TSX canvas policy, design guidance, flow-diagram guidance, slop rules, self-check, preview server requirements, and open-link requirements you must follow. The delivered review canvas must be a `.canvas.tsx` or runtime-equivalent `.tsx` file served through the runtime preview path and opened in the in-app browser.
 
 ## Gather the diff
 
@@ -44,6 +44,12 @@ Pseudocode shows the shape of the change; an example trace shows it executing. W
 
 Use this for genuinely surprising behavior changes, not every core hunk.
 
+## Add flow diagrams when they help
+
+When the diff changes a state transition, request pipeline, event ordering, dependency direction, retry path, permission gate, data transformation, or old-vs-new control flow, add a small flow diagram near the relevant diff. The diagram should make the review faster than prose alone. Keep it focused: a few nodes, clear arrows, and one sentence explaining the key path or divergence.
+
+Do not diagram obvious straight-line code. Reserve diagrams for places where reviewers would otherwise have to reconstruct flow mentally.
+
 ## Call attention to tricky things
 
 When a hunk contains something surprising, risky, or easy to miss, visually separate it from the surrounding diff and pair it with a short tag (e.g. "Subtle", "Breaking", "Race condition", "Perf") and a one-sentence explanation so the reviewer sees the concern and the code together.
@@ -64,4 +70,4 @@ Keep commentary terse. One or two sentences per note.
 
 The sections above are a floor, not a ceiling. The goal is the fastest possible path for the reviewer to understand this specific change - so look at the diff in front of you and ask what representation would actually help. A tiny state diagram, a before/after call graph, a table of input->output pairs, a timeline of commits, a confidence annotation per file, a single large callout with everything else collapsed - whatever fits the change.
 
-HTML, CSS, and lightweight inline JavaScript can express charts, tables, diff views, DAG layouts, cards, stats, interactive state, and more. Reach for whichever representation best serves the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.
+The canvas SDK can express charts, tables, diff views, DAG layouts, cards, stats, interactive state, and more. Reach for whichever representation best serves the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.
