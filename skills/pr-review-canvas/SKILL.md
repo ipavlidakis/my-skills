@@ -1,7 +1,7 @@
 ---
 name: pr-review-canvas
 description: >-
-  Render a PR diff review as an agent canvas that groups changes by
+  Render a PR diff review as a self-contained HTML agent canvas that groups changes by
   reviewer importance, separates boilerplate from core logic, and
   highlights tricky or unexpected code. Use when reviewing a pull
   request, summarizing a diff for review, or when the user asks for a
@@ -10,11 +10,11 @@ description: >-
 
 # PR Review Canvas
 
-Build a canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
+Build a self-contained HTML canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
 
 ## Prerequisites
 
-Read `references/agent-canvas.md` first. It contains the generation policy, design guidance, slop rules, self-check, and file-path conventions you must follow. The full component and hook surface should be declared by the active agent runtime's canvas SDK type definitions - read them to discover exact exports and prop shapes rather than guessing.
+Read `references/agent-canvas.md` first. It contains the HTML artifact policy, design guidance, slop rules, self-check, and open-link requirements you must follow. If the active agent runtime exposes a canvas SDK, you may use it as an implementation aid, but the delivered review canvas must be a self-contained `.html` file that opens natively in the in-app browser.
 
 ## Gather the diff
 
@@ -64,4 +64,4 @@ Keep commentary terse. One or two sentences per note.
 
 The sections above are a floor, not a ceiling. The goal is the fastest possible path for the reviewer to understand this specific change - so look at the diff in front of you and ask what representation would actually help. A tiny state diagram, a before/after call graph, a table of input->output pairs, a timeline of commits, a confidence annotation per file, a single large callout with everything else collapsed - whatever fits the change.
 
-The canvas SDK has charts, tables, diff views, DAG layout, cards, stats, interactive state, and more. Reach for whichever components best serve the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.
+HTML, CSS, and lightweight inline JavaScript can express charts, tables, diff views, DAG layouts, cards, stats, interactive state, and more. Reach for whichever representation best serves the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.

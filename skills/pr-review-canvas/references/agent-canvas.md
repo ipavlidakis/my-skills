@@ -1,8 +1,8 @@
 # Agent Canvas Reference
 
-This reference adapts a canvas-generation policy into agent-runtime-neutral terms. Follow the active agent runtime's exact canvas paths, SDK module names, and generated type definitions when they differ from the names below.
+This reference defines an agent-runtime-neutral canvas policy. The durable output is a self-contained `.html` file that opens directly in the in-app browser. Runtime-specific `.tsx` canvases, SDK components, or build steps may be useful while authoring, but they are implementation details, not the user-facing deliverable.
 
-A canvas is a single `.canvas.tsx` file the agent runtime compiles so the user can open it beside the chat. Follow the workflow below in order.
+A canvas is a single standalone HTML file the user can open beside the chat. Follow the workflow below in order.
 
 ## Workflow
 
@@ -29,30 +29,40 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 - The answer is a short factual answer, one-off file edit, or quick clarifying question.
 - Connected tools are queried as an **intermediate step** for a different deliverable.
 
-### 2. Write the canvas
+### 2. Write the HTML canvas
 
-**Location.** Canvases live in the active agent runtime's managed canvas directory. The runtime may only detect canvases written directly inside that exact directory; subfolders, alternate extensions, and other locations may not be picked up. For a new canvas, write the `.canvas.tsx` file at the runtime's required canvas path. Do not stop after telling the user the path or showing code in chat. If you cannot determine the workspace directory from absolute paths already in your environment, inspect the runtime's known project or workspace registry rather than guessing. Use a descriptive kebab-case filename ending in `.canvas.tsx`; preserve acronym capitalization and lowercase the rest.
+**Location.** Prefer the active agent runtime's managed artifact directory when one exists. If no such directory exists, write outside the reviewed repository under `~/.agent-artifacts/pr-review-canvas/<workspace-slug>/<name>.html`. Do not dirty the reviewed repository with generated review artifacts unless the user explicitly asks. Use a descriptive kebab-case filename ending in `.html`; preserve acronym capitalization and lowercase the rest.
 
 **File rules:**
 
-- Exactly one `.canvas.tsx` file per canvas. Never create helper files, style files, or supporting modules.
-- Import only from the active runtime's canvas SDK module. No relative imports, no npm packages, no Node built-ins.
-- Default-export the top-level component.
-- Embed all data inline. **No `fetch()`, no network calls.**
+- Exactly one `.html` file per canvas. Never create helper files, style files, or supporting modules.
+- Embed all CSS in a `<style>` tag and any behavior in a small inline `<script>` tag.
+- Embed all review data inline. **No `fetch()`, no network calls, no external CDNs.**
+- Do not require TypeScript, Node, a bundler, a dev server, or a canvas runtime to view the final artifact.
 
-**Component discovery:** prefer built-in canvas SDK components over hand-rolled markup. The full public surface (components, hooks, prop types, tokens) should be declared by the active runtime's SDK type definitions. Read them when you need exact exports, prop shapes, or hook signatures rather than guessing. Referencing an export that does not exist is the most common runtime error.
+**Optional runtime SDK use:** if the active runtime exposes a canvas SDK, you may use its components and type definitions while designing the artifact. If you author `.tsx`, convert or render it to a standalone `.html` file before delivery. The final link must open the HTML file natively in the in-app browser.
 
 Apply the canvas generation policy below as you write, and complete its pre-delivery self-check before returning the canvas.
 
+### 3. Return an in-app browser link
+
+After writing the HTML file, include a Markdown link that opens the generated file in the in-app browser. Use the runtime's local-file link format when one is documented. Otherwise use a `file://` URL built from the absolute path:
+
+```markdown
+[Open PR review canvas](file:///absolute/path/to/pr-review-canvas.html)
+```
+
+Do not return only the path. Do not return only source code. The user must get a clickable link to the generated HTML artifact.
+
 ## Design guidance
 
-Be creative. The SDK gives you expressive building blocks - use them in whatever combination best serves the content. But avoid slop: no gradients, no emojis, no box-shadows, no rainbow coloring. Agent canvases are flat, minimal, and purposeful.
+Be creative. HTML, CSS, SVG, and lightweight inline JavaScript give you enough expressive building blocks - use them in whatever combination best serves the content. But avoid slop: no gradients, no emojis, no box-shadows, no rainbow coloring. Agent canvases are flat, minimal, and purposeful.
 
 ### Visual hierarchy
 
 Not everything deserves equal treatment. Primary content gets more space, larger headings, and accent color. Supporting content stays compact. Squint test: blur your eyes - can you tell what matters?
 
-**Color.** Use colors from the runtime theme tokens. Read the theme hook JSDoc in the SDK declarations for the return shape and usage pattern. No hardcoded hex. Use accent color deliberately, not on everything.
+**Color.** Prefer runtime theme CSS variables when available. If none exist, use a restrained neutral palette with one accent color. Use accent color deliberately, not on everything.
 
 ### Slop patterns - forbidden
 
@@ -68,68 +78,77 @@ These specific patterns produce low-quality output. If two or more are present, 
 
 ### Pre-delivery self-check
 
-Before returning canvas code, verify:
+Before returning the canvas link, verify:
 
 1. Does the layout have visual hierarchy? One thing should stand out.
 2. Is there variety in the composition? Not just a single column of uniform blocks.
 3. Slop check: scan for the forbidden patterns above.
+4. Does the file open without TypeScript, Node, a bundler, a dev server, or network access?
+5. Did you include a clickable in-app browser link to the generated `.html` file?
 
 ## Introducing the canvas
 
-When you create a canvas, add a short note in your chat response telling the user you created a canvas they can open beside the chat:
+When you create a canvas, add a short note in your chat response telling the user you created a canvas they can open beside the chat, and include the openable HTML link:
 
-- **First canvas** - if no other `.canvas.tsx` files exist in the workspace's canvas directory, include one sentence explaining what a canvas is.
+- **First canvas** - if no other HTML canvases exist in the workspace's artifact directory, include one sentence explaining what a canvas is.
 - **Unsolicited canvas** - if the user did not ask for a canvas, include one sentence explaining why you chose it over plain text.
 
 Both can apply at once; one or two sentences total is enough. Skip the intro for subsequent canvases.
 
 ## Troubleshooting
 
-If a canvas appears blank or missing, the most common cause is that it was not written under the runtime's managed canvas directory exactly. Re-save it to that path. Do not debug this by trying to create the managed directory manually; focus on correcting the file path instead. Users can click the canvas file path in the response to open it, just like any other file path. When present, the canvas server may write a `<name>.canvas.status.json` sidecar after each build with `status`, `diagnostics`, or `error` fields you can read; the file is best-effort and may not exist, so do not block on it.
+If a canvas appears blank or missing, first verify that the response link points to the generated `.html` file's absolute path and that the file exists. If the browser refuses the link format, provide the runtime's preferred local-file link format. If the page renders blank, open the HTML file directly and check for JavaScript errors, missing inline data, or invalid markup. Do not introduce a dev server or build step to fix a viewing problem.
 
 ## Good example
 
-```tsx
-import { Divider, Grid, H1, H2, Stack, Stat, Table, Text } from 'agent/canvas';
-
-export default function ServiceOverview() {
-  return (
-    <Stack gap={20}>
-      <H1>Service Overview</H1>
-      <Grid columns={3} gap={16}>
-        <Stat value="6" label="Total Services" />
-        <Stat value="5" label="Healthy" tone="success" />
-        <Stat value="1" label="Degraded" tone="warning" />
-      </Grid>
-      <Divider />
-      <H2>Service Status</H2>
-      <Table
-        headers={["Service", "Status", "Uptime", "Latency"]}
-        rows={[
-          ["api-gateway", "Operational", "99.99%", "12ms"],
-          ["auth-service", "Degraded", "99.2%", "340ms"],
-          ["billing", "Operational", "99.8%", "45ms"],
-        ]}
-        rowTone={[undefined, "warning", undefined]}
-      />
-      <Divider />
-      <H2>Recent Changes</H2>
-      <Text>Auth service latency increased after the 14:30 deploy.</Text>
-      <Text tone="secondary" size="small">Last checked: Apr 7, 2026 14:52 UTC</Text>
-    </Stack>
-  );
-}
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service Overview</title>
+  <style>
+    :root { color-scheme: light dark; --accent: #2563eb; }
+    body { margin: 0; font: 14px system-ui, sans-serif; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .stat { border: 1px solid color-mix(in srgb, currentColor 16%, transparent); padding: 12px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent); padding: 8px; text-align: left; }
+    .warning { color: #b45309; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Service Overview</h1>
+    <section class="stats" aria-label="Service stats">
+      <div class="stat"><strong>6</strong><br>Total Services</div>
+      <div class="stat"><strong>5</strong><br>Healthy</div>
+      <div class="stat warning"><strong>1</strong><br>Degraded</div>
+    </section>
+    <h2>Service Status</h2>
+    <table>
+      <thead><tr><th>Service</th><th>Status</th><th>Uptime</th><th>Latency</th></tr></thead>
+      <tbody>
+        <tr><td>api-gateway</td><td>Operational</td><td>99.99%</td><td>12ms</td></tr>
+        <tr><td>auth-service</td><td class="warning">Degraded</td><td>99.2%</td><td>340ms</td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
 ```
 
-Stats in a grid, table directly under H2, text sections without cards.
+Stats in a grid, table directly under H2, text sections without cards, no runtime required.
 
 ## Bad example - do not imitate
 
-```tsx
-// BAD - every section wrapped in Card, no hierarchy, Table unnecessarily boxed
-<Stack gap={12}>
-  <Card><CardHeader>Summary</CardHeader><CardBody><Text>6 services.</Text></CardBody></Card>
-  <Card><CardHeader>Status</CardHeader><CardBody><Table headers={[...]} rows={[...]} /></CardBody></Card>
-  <Card><CardHeader>Changes</CardHeader><CardBody><Text>Latency increased.</Text></CardBody></Card>
-</Stack>
+```html
+<!-- BAD - every section wrapped in the same boxed div, no hierarchy, table unnecessarily boxed -->
+<main>
+  <div class="card"><h2>Summary</h2><p>6 services.</p></div>
+  <div class="card"><h2>Status</h2><div class="card"><table>...</table></div></div>
+  <div class="card"><h2>Changes</h2><p>Latency increased.</p></div>
+</main>
 ```
