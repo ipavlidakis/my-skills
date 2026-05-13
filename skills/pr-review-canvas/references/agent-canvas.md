@@ -44,6 +44,16 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 
 Apply the canvas generation policy below as you write, and complete its pre-delivery self-check before returning the canvas.
 
+### Required review sections
+
+Every PR review canvas must include these visible top-level sections in this order:
+
+1. **Core logic** - behavior, algorithms, state transitions, API surface, tricky business rules. Show the richest diff/context here.
+2. **Wiring & integration** - routes, dependency injection, config, call sites, app lifecycle hooks, build/test plumbing that connects the core logic.
+3. **Boilerplate & mechanical** - generated code, formatting, import churn, renames, type re-exports, project metadata. Summarize file names and stats; expand only when relevant.
+
+If one section has no entries, render it with `None identified`. Do not omit it. Other views such as summary cards, risk callouts, flow diagrams, or file stats are additive and must not replace these sections.
+
 ### 3. Serve and open the canvas
 
 Do not use `file://` links for the primary open path; many in-app browsers block them and raw TSX will not render that way.
@@ -78,7 +88,7 @@ Not everything deserves equal treatment. Primary content gets more space, larger
 
 Use flow diagrams when they make review faster: state transitions, request pipelines, event ordering, dependency direction, retry paths, permission gates, data transformations, or old-vs-new control flow. Keep diagrams small and close to the relevant diff. Prefer runtime DAG or flow components when available; otherwise use simple TSX/SVG primitives inside the single canvas file.
 
-Do not diagram obvious straight-line code. A weak diagram is worse than none.
+Do not diagram obvious straight-line code. A weak diagram is worse than none. Diagrams are supporting material; they must sit inside or next to the relevant required section instead of replacing the section structure.
 
 ### Slop patterns - forbidden
 
@@ -98,11 +108,12 @@ Before returning the canvas link, verify:
 
 1. Does the layout have visual hierarchy? One thing should stand out.
 2. Is there variety in the composition? Not just a single column of uniform blocks.
-3. Did you add a flow diagram only when it improves review comprehension?
-4. Slop check: scan for the forbidden patterns above.
-5. Does the preview URL render the TSX canvas successfully?
-6. Did you open the verified preview URL in the in-app browser yourself when the runtime provides a browser tool?
-7. Did you include a clickable localhost HTTP link to the rendered canvas?
+3. Are `Core logic`, `Wiring & integration`, and `Boilerplate & mechanical` present as visible top-level sections in that order?
+4. Did you add a flow diagram only when it improves review comprehension, and does it support rather than replace a required section?
+5. Slop check: scan for the forbidden patterns above.
+6. Does the preview URL render the TSX canvas successfully?
+7. Did you open the verified preview URL in the in-app browser yourself when the runtime provides a browser tool?
+8. Did you include a clickable localhost HTTP link to the rendered canvas?
 
 ## Introducing the canvas
 

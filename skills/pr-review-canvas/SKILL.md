@@ -30,7 +30,9 @@ Do **not** present files in alphabetical or tree order. Reorganize into sections
 2. **Wiring & integration** - Route registration, dependency injection, config plumbing that connects the core logic. Condensed - enough to confirm correctness.
 3. **Boilerplate & mechanical** - Import reordering, renames, generated code, formatting, type re-exports. Summarize as a list of file names and stats. No inline diffs unless specifically relevant.
 
-Lead with core logic. The reviewer's attention is freshest at the top.
+These three sections are mandatory top-level canvas sections. Keep the exact section concepts visible even if you add summaries, diagrams, timelines, tabs, or other creative views. Lead with core logic. The reviewer's attention is freshest at the top.
+
+If a section is empty, keep the section and state `None identified` so the reviewer knows the category was considered. Do not replace these sections with only a file list, diagram, narrative summary, or risk table.
 
 ## Distill complex logic into pseudocode
 
@@ -48,7 +50,7 @@ Use this for genuinely surprising behavior changes, not every core hunk.
 
 When the diff changes a state transition, request pipeline, event ordering, dependency direction, retry path, permission gate, data transformation, or old-vs-new control flow, add a small flow diagram near the relevant diff. The diagram should make the review faster than prose alone. Keep it focused: a few nodes, clear arrows, and one sentence explaining the key path or divergence.
 
-Do not diagram obvious straight-line code. Reserve diagrams for places where reviewers would otherwise have to reconstruct flow mentally.
+Do not diagram obvious straight-line code. Reserve diagrams for places where reviewers would otherwise have to reconstruct flow mentally. Diagrams are supporting material; they must not replace the required core/wiring/mechanical sections.
 
 ## Call attention to tricky things
 
