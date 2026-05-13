@@ -14,7 +14,7 @@ Build a self-contained HTML canvas that presents a PR diff reorganized for revie
 
 ## Prerequisites
 
-Read `references/agent-canvas.md` first. It contains the HTML artifact policy, design guidance, slop rules, self-check, and open-link requirements you must follow. If the active agent runtime exposes a canvas SDK, you may use it as an implementation aid, but the delivered review canvas must be a self-contained `.html` file that opens natively in the in-app browser.
+Read `references/agent-canvas.md` first. It contains the HTML artifact policy, optional TSX preview guidance, design guidance, slop rules, self-check, local server requirements, and open-link requirements you must follow. If the active agent runtime exposes a canvas SDK, you may also serve a `.tsx` preview, but the delivered review canvas must include a self-contained `.html` file served over localhost and opened in the in-app browser.
 
 ## Gather the diff
 

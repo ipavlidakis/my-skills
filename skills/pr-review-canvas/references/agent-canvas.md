@@ -1,6 +1,6 @@
 # Agent Canvas Reference
 
-This reference defines an agent-runtime-neutral canvas policy. The durable output is a self-contained `.html` file that opens directly in the in-app browser. Runtime-specific `.tsx` canvases, SDK components, or build steps may be useful while authoring, but they are implementation details, not the user-facing deliverable.
+This reference defines an agent-runtime-neutral canvas policy. The durable output is a self-contained `.html` file served over localhost and opened directly in the in-app browser. Runtime-specific `.tsx` canvases, SDK components, or build steps may also be useful as a richer live preview when the active runtime can serve them.
 
 A canvas is a single standalone HTML file the user can open beside the chat. Follow the workflow below in order.
 
@@ -38,21 +38,38 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 - Exactly one `.html` file per canvas. Never create helper files, style files, or supporting modules.
 - Embed all CSS in a `<style>` tag and any behavior in a small inline `<script>` tag.
 - Embed all review data inline. **No `fetch()`, no network calls, no external CDNs.**
-- Do not require TypeScript, Node, a bundler, a dev server, or a canvas runtime to view the final artifact.
+- Do not require TypeScript, a bundler, a framework dev server, or a canvas runtime to view the final artifact. A simple static localhost server is required for in-app browser access.
 
-**Optional runtime SDK use:** if the active runtime exposes a canvas SDK, you may use its components and type definitions while designing the artifact. If you author `.tsx`, convert or render it to a standalone `.html` file before delivery. The final link must open the HTML file natively in the in-app browser.
+**Optional TSX preview:** if the active runtime can serve or render `.tsx` canvases directly, you may create a sibling `.tsx` preview in the runtime's expected location and open it in the in-app browser too. This is additive. Always also create the self-contained HTML artifact and verified localhost HTML link. If the `.tsx` preview fails to serve, do not block delivery; fall back to the verified HTML link.
 
 Apply the canvas generation policy below as you write, and complete its pre-delivery self-check before returning the canvas.
 
-### 3. Return an in-app browser link
+### 3. Serve and open the canvas
 
-After writing the HTML file, include a Markdown link that opens the generated file in the in-app browser. Use the runtime's local-file link format when one is documented. Otherwise use a `file://` URL built from the absolute path:
+Do not use `file://` links for the primary open path; many in-app browsers block them.
 
-```markdown
-[Open PR review canvas](file:///absolute/path/to/pr-review-canvas.html)
+After writing the HTML file:
+
+1. Start a static localhost server rooted at the artifact directory, using an available port.
+2. Verify the generated file is reachable with an HTTP request that returns success.
+3. If you created a `.tsx` preview and the runtime exposes a URL for it, verify that preview URL too.
+4. If the runtime has an in-app browser or browser automation tool, open the best verified URL yourself. Prefer the verified `.tsx` preview URL when it exists; otherwise open the verified HTML URL. Do not ask the user whether they can see or access the file first.
+5. Include the verified HTML URL as a Markdown link in the final response. If a `.tsx` preview URL was verified, include it as an additional preview link.
+
+Example:
+
+```bash
+cd /absolute/artifact/directory
+python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-Do not return only the path. Do not return only source code. The user must get a clickable link to the generated HTML artifact.
+Then verify and return:
+
+```markdown
+[Open PR review canvas](http://127.0.0.1:8765/pr-review-canvas.html)
+```
+
+Keep the static server running for the session when possible. If port `8765` is busy, choose another free localhost port. Do not return only the path. Do not return only source code. The user must get a clickable HTTP link to the generated HTML artifact, and the agent should have already opened a verified canvas URL in the in-app browser when the runtime permits it.
 
 ## Design guidance
 
@@ -83,12 +100,15 @@ Before returning the canvas link, verify:
 1. Does the layout have visual hierarchy? One thing should stand out.
 2. Is there variety in the composition? Not just a single column of uniform blocks.
 3. Slop check: scan for the forbidden patterns above.
-4. Does the file open without TypeScript, Node, a bundler, a dev server, or network access?
-5. Did you include a clickable in-app browser link to the generated `.html` file?
+4. Does the file render without TypeScript, a bundler, a framework dev server, a canvas runtime, or external network access?
+5. Does the localhost URL return success before you give it to the user?
+6. If you created a `.tsx` preview, did you verify its preview URL before including or opening it?
+7. Did you open the best verified URL in the in-app browser yourself when the runtime provides a browser tool?
+8. Did you include a clickable localhost HTTP link to the generated `.html` file?
 
 ## Introducing the canvas
 
-When you create a canvas, add a short note in your chat response telling the user you created a canvas they can open beside the chat, and include the openable HTML link:
+When you create a canvas, add a short note in your chat response telling the user you created a canvas and opened it in the in-app browser, and include the verified localhost HTML link. If you also created a verified `.tsx` preview, include that preview link first and label the HTML link as the fallback:
 
 - **First canvas** - if no other HTML canvases exist in the workspace's artifact directory, include one sentence explaining what a canvas is.
 - **Unsolicited canvas** - if the user did not ask for a canvas, include one sentence explaining why you chose it over plain text.
@@ -97,7 +117,7 @@ Both can apply at once; one or two sentences total is enough. Skip the intro for
 
 ## Troubleshooting
 
-If a canvas appears blank or missing, first verify that the response link points to the generated `.html` file's absolute path and that the file exists. If the browser refuses the link format, provide the runtime's preferred local-file link format. If the page renders blank, open the HTML file directly and check for JavaScript errors, missing inline data, or invalid markup. Do not introduce a dev server or build step to fix a viewing problem.
+If a canvas appears blank or missing, first verify that the static localhost server is still running, the response link points to the generated `.html` file route, and the URL returns success. If the page renders blank, open the browser console or inspect the HTML directly for JavaScript errors, missing inline data, or invalid markup. Do not fall back to asking the user to find the file manually.
 
 ## Good example
 
