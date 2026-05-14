@@ -1,7 +1,7 @@
 ---
 name: pr-review-canvas
 description: >-
-  Render a PR diff review as a TSX agent canvas that groups changes by
+  Render a PR diff review as an HTML canvas that groups changes by
   reviewer importance, separates boilerplate from core logic, and
   highlights tricky or unexpected code. Use when reviewing a pull
   request, summarizing a diff for review, or when the user asks for a
@@ -10,13 +10,29 @@ description: >-
 
 # PR Review Canvas
 
-Build a TSX canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
+Build a standalone HTML canvas that presents a PR diff reorganized for reviewer comprehension - not in file-tree order.
 
 ## Prerequisites
 
-Read `references/agent-canvas.md` first. It contains the TSX canvas policy, design guidance, flow-diagram guidance, slop rules, self-check, preview server requirements, and open-link requirements you must follow. The delivered review canvas must be a `.canvas.tsx` or runtime-equivalent `.tsx` file served through the runtime preview path and opened in the in-app browser.
+Read `references/agent-canvas.md` first. It contains the HTML canvas policy, design guidance, flow-diagram guidance, slop rules, self-check, preview server requirements, and link-return requirements you must follow. The delivered review canvas must be a `.html` file served through a local HTTP preview path. Return a Markdown link that targets the in-app browser when the runtime exposes one; otherwise fall back to the plain local web address. Do not open Chrome, the in-app browser, screenshots, or browser automation just to test the generated file.
 
-Start from `assets/pr-review-canvas-template.canvas.tsx` unless the active runtime requires a different component shape. Copy it to the output canvas path, replace the data arrays, and extend the included components only where the specific PR needs it. Keep the required sections and style system intact unless the diff clearly needs a different representation.
+Start from `assets/pr-review-canvas-template.html`. Copy it to the output canvas path, replace the placeholders, and extend the included HTML components only where the specific PR needs it. Keep the required sections and style system intact unless the diff clearly needs a different representation.
+
+The template uses plain HTML/CSS components (`section`, `.grid`, `.card`,
+`.review-panel`, `.diff-view`, `table`, `.callout`, etc.). Preserve that
+structure when generating canvases. Do not generate TSX by default.
+
+The rendered preview should match the reference canvas theme: editorial serif
+typography, light neutral page background, flat white panels, thin neutral
+borders, restrained blue accents, and dark monospace diff panes.
+Use `scripts/serve-html.js <review.html> --port <port> --route /<name>.html`
+instead of rewriting a one-off server.
+
+The template is intentionally overflow-safe. Preserve the `minmax(0, ...)`,
+`min-width: 0`, panel overflow, diff scrolling, table scrolling, and responsive
+media-query rules unless you replace them with equivalent containment. Long code
+lines, branch names, file paths, and prose must never resize a grid column or
+cover the side rail.
 
 ## Gather the diff
 
@@ -28,14 +44,24 @@ Expect a GitHub PR link (a full URL like `https://github.com/<owner>/<repo>/pull
 
 Do **not** present files in alphabetical or tree order. Reorganize into sections ordered by reviewer value:
 
-1. **Core logic** - New behavior, algorithm changes, state transitions, API surface changes. Show full diffs with surrounding context.
-2. **Wiring & integration** - Route registration, dependency injection, config plumbing that connects the core logic. Condensed - enough to confirm correctness.
-3. **Boilerplate & mechanical** - Import reordering, renames, generated code, formatting, type re-exports. Summarize as a list of file names and stats. No inline diffs unless specifically relevant.
-4. **Risks** - Correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this section concise and link each risk back to the relevant core/wiring/mechanical section when possible.
+1. **Reviewer path** - The scan order through the PR.
+2. **Core logic** - New behavior, algorithm changes, state transitions, API surface changes. Show full diffs with surrounding context. Put wiring and integration details inside this section as supporting subsections, not as a top-level group.
+3. **Risks** - A separate standalone list of correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this section concise and link each risk back to the relevant core/mechanical section when possible.
+4. **Test coverage** - Focused automated and manual validation signals.
+5. **Boilerplate & mechanical** - Import reordering, renames, generated code, formatting, type re-exports, project metadata. Summarize as a list of file names and stats. No inline diffs unless specifically relevant. This group is always last.
 
-These four sections are mandatory top-level canvas sections. Keep the exact section concepts visible even if you add summaries, diagrams, timelines, tabs, or other creative views. Lead with core logic. The reviewer's attention is freshest at the top.
+These five top-level sections are mandatory and must appear in exactly that order:
+Reviewer Path, Core Logic, Risks, Test Coverage, Boilerplate & Mechanical. Keep
+the exact section concepts visible even if you add summaries, diagrams,
+timelines, tabs, or other creative views. Lead with core logic after the reviewer
+path. The reviewer's attention is freshest at the top.
 
 If a section is empty, keep the section and state `None identified` so the reviewer knows the category was considered. Do not replace these sections with only a file list, diagram, narrative summary, or risk table.
+
+The **Risks** section must be its own visible top-level list. Inline callouts near
+diff hunks are useful, but they do not satisfy the risk requirement by
+themselves. Each real risk should name the category, the failure mode, where to
+review it, and the reviewer action or validation needed.
 
 ## Distill complex logic into pseudocode
 
@@ -75,4 +101,4 @@ Keep commentary terse. One or two sentences per note.
 
 The sections above are a floor, not a ceiling. The goal is the fastest possible path for the reviewer to understand this specific change - so look at the diff in front of you and ask what representation would actually help. A tiny state diagram, a before/after call graph, a table of input->output pairs, a timeline of commits, a confidence annotation per file, a single large callout with everything else collapsed - whatever fits the change.
 
-The canvas SDK can express charts, tables, diff views, DAG layouts, cards, stats, interactive state, and more. Reach for whichever representation best serves the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.
+The HTML template can express charts, tables, diff views, DAG layouts, cards, stats, and focused review panels. Reach for whichever representation best serves the change at hand. A review of a refactor looks different from a review of a bug fix looks different from a review of a new feature - let the canvas reflect that.

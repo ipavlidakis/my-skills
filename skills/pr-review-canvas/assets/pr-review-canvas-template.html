@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR Review Canvas</title>
+  <style>
+    :root {
+      color: #1f2430;
+      background: #f3f4f6;
+      font-family: Georgia, "Times New Roman", Times, serif;
+      --accent: #24598a;
+      --border: #d8dee6;
+      --muted: #526071;
+      --panel: #ffffff;
+      --soft: #edf3f8;
+      --warning: #fffaf0;
+      --danger: #923232;
+      --success: #176a3a;
+      --code-bg: #101418;
+      --code-fg: #e7eaee;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f4f6; }
+    a { color: var(--accent); text-decoration: none; }
+    code {
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 4px;
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .85em;
+    }
+
+    .canvas {
+      width: min(100%, 1500px);
+      margin: 0 auto;
+      padding: clamp(24px, 3vw, 44px) clamp(18px, 3vw, 42px) 64px;
+      overflow-x: hidden;
+    }
+
+    .stack { display: grid; gap: 20px; min-width: 0; }
+    .section { display: grid; gap: 12px; min-width: 0; }
+    .grid { display: grid; gap: 12px; min-width: 0; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .split {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+    .grid > *, .section > *, .row > * { min-width: 0; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(320px, .9fr);
+      gap: 28px;
+      align-items: start;
+    }
+    .hero-copy {
+      border-left: 4px solid var(--accent);
+      padding-left: 18px;
+      display: grid;
+      gap: 4px;
+    }
+    .meta { display: grid; gap: 3px; color: var(--muted); }
+
+    h1, h2, h3, p { margin: 0; letter-spacing: 0; }
+    h1 { font-size: clamp(26px, 2.2vw, 34px); line-height: 1.16; font-weight: 700; }
+    h2 { font-size: 24px; line-height: 1.22; font-weight: 700; }
+    h3 { font-size: 18px; line-height: 1.32; font-weight: 700; }
+    p { line-height: 1.55; font-size: 17px; }
+    .muted { color: var(--muted); }
+    .small { font-size: 14px; color: var(--muted); }
+    hr { border: 0; border-top: 1px solid var(--border); width: 100%; margin: 18px 0; }
+
+    .stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 12px;
+      gap: 10px;
+    }
+    .stat, .card, .callout, .review-panel, .flow-step {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .stat { padding: 12px 14px; min-height: 78px; }
+    .stat dt {
+      margin: 0 0 6px;
+      color: #66758a;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+    }
+    .stat dd { margin: 0; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+    .stat.success dd { color: var(--success); }
+    .stat.danger dd { color: var(--danger); }
+
+    .flow-step {
+      border-radius: 8px;
+      padding: 12px;
+      background: #f8fafc;
+      min-height: 92px;
+    }
+    .review-panel {
+      border-radius: 8px;
+      background: var(--panel);
+      display: grid;
+      gap: 0;
+      box-shadow: 0 1px 2px rgb(16 24 40 / 5%);
+    }
+    .review-panel > h3 {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+    }
+    .review-panel > p {
+      padding: 14px 16px 0;
+    }
+    .review-panel > .mini-code {
+      margin: 14px 16px 16px;
+    }
+
+    .callout { padding: 14px 16px; }
+    .callout strong { display: block; margin-bottom: 8px; font-size: 17px; }
+    .callout.warning { border-left: 4px solid #c6a15b; background: var(--warning); }
+    .callout.info { border-left: 4px solid var(--accent); background: #edf5fb; }
+    .callout.neutral { border-left: 4px solid #66758a; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-header strong { font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+    .diff-stats {
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+    }
+    .diff-stats .added { color: var(--success); }
+    .diff-stats .removed { color: var(--danger); }
+
+    pre {
+      max-width: 100%;
+      margin: 0;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      tab-size: 4;
+    }
+    .mini-code {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--soft);
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 18px;
+    }
+    .diff-view { display: block; width: 100%; padding: 12px; background: var(--code-bg); color: var(--code-fg); }
+    .diff-line { display: block; width: max-content; min-width: 100%; min-height: 18px; white-space: pre; }
+    .diff-line.added { color: #9ce2b3; }
+    .diff-line.removed { color: #ffb2b2; }
+    .diff-line.unchanged { color: #d8dde3; }
+
+    .table-scroll { max-width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 11px 13px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    th {
+      background: var(--soft);
+      color: #344054;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .035em;
+    }
+    tbody tr:nth-child(even) td { background: #f8fafc; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cfd6de;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #344054;
+      background: var(--panel);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 900px) {
+      .canvas { padding: 20px 16px 48px; }
+      .hero, .grid.two, .grid.four, .split, .stats { grid-template-columns: 1fr; }
+      h1 { font-size: 26px; }
+      h2 { font-size: 22px; }
+      p { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="canvas stack">
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>PR #{{PR_NUMBER}}: {{PR_HEADING}}</h1>
+        <div class="meta">
+          <p><a href="{{PR_URL}}">{{PR_TITLE}}</a></p>
+          <p>by {{PR_AUTHOR}}</p>
+          <p><code>{{PR_BASE}}</code> &larr; <code>{{PR_HEAD}}</code></p>
+        </div>
+      </div>
+      <dl class="grid stats">
+        <div class="stat"><dt>Files changed</dt><dd>{{PR_FILES}}</dd></div>
+        <div class="stat success"><dt>Additions</dt><dd>+{{PR_ADDITIONS}}</dd></div>
+        <div class="stat danger"><dt>Deletions</dt><dd>-{{PR_DELETIONS}}</dd></div>
+        <div class="stat"><dt>Commits</dt><dd>{{PR_COMMITS}}</dd></div>
+      </dl>
+    </section>
+
+    <hr>
+
+    <section class="section">
+      <h2>Reviewer Path</h2>
+      <div class="grid four">
+        <article class="flow-step"><h3>1. Identify entry point</h3><p class="small">Start at the changed user-facing path.</p></article>
+        <article class="flow-step"><h3>2. Follow state</h3><p class="small">Track the new state transition or data flow.</p></article>
+        <article class="flow-step"><h3>3. Check wiring</h3><p class="small">Confirm the behavior is reachable from real call sites.</p></article>
+        <article class="flow-step"><h3>4. Validate exit</h3><p class="small">Review cancellation, error, and rollback paths.</p></article>
+      </div>
+    </section>
+
+    <div class="grid two">
+      <aside class="callout warning"><strong>{{CALLOUT_WARNING_TITLE}}</strong><p class="small">{{CALLOUT_WARNING_BODY}}</p></aside>
+      <aside class="callout info"><strong>{{CALLOUT_INFO_TITLE}}</strong><p class="small">{{CALLOUT_INFO_BODY}}</p></aside>
+    </div>
+
+    <section class="section">
+      <h2>Core Logic</h2>
+      <p class="muted">{{CORE_INTRO}}</p>
+      <div class="grid split">
+        <article class="review-panel">
+          <h3>{{CORE_PANEL_TITLE}}</h3>
+          <p>{{CORE_PANEL_BODY}}</p>
+          <pre class="mini-code">{{CORE_PSEUDOCODE}}</pre>
+        </article>
+        <article class="card">
+          <header class="card-header">
+            <strong>{{CORE_DIFF_FILE}}</strong>
+            <span class="diff-stats"><span class="added">+{{CORE_DIFF_ADDITIONS}}</span> <span class="removed">-{{CORE_DIFF_DELETIONS}}</span></span>
+          </header>
+          <pre class="diff-view">{{CORE_DIFF_LINES}}</pre>
+        </article>
+      </div>
+      <h3>Wiring &amp; Integration</h3>
+      <div class="grid split">
+        <article class="card">
+          <header class="card-header"><strong>{{WIRING_DIFF_FILE}}</strong><span class="diff-stats"><span class="added">+{{WIRING_DIFF_ADDITIONS}}</span> <span class="removed">-{{WIRING_DIFF_DELETIONS}}</span></span></header>
+          <pre class="diff-view">{{WIRING_DIFF_LINES}}</pre>
+        </article>
+        <article class="review-panel">
+          <h3>{{WIRING_PANEL_TITLE}}</h3>
+          <p>{{WIRING_PANEL_BODY}}</p>
+        </article>
+      </div>
+    </section>
+
+    <hr>
+
+    <section class="section">
+      <h2>Risks</h2>
+      <p class="muted">Standalone PR risk list. Inline callouts are not enough; summarize every real risk here.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Category</th><th>Risk</th><th>Reviewer action</th></tr></thead>
+          <tbody>
+            {{RISK_ROWS}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr>
+
+    <section class="section">
+      <h2>Test Coverage Signals</h2>
+      <p class="muted">Focused test signal and manual validation gaps for the changed behavior.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Suite</th><th>Coverage shape</th><th>What it proves</th></tr></thead>
+          <tbody>
+            {{TEST_ROWS}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr>
+
+    <section class="section">
+      <h2>Boilerplate &amp; Mechanical</h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Area</th><th>Size</th><th>Review note</th></tr></thead>
+          <tbody>
+            {{MECHANICAL_ROWS}}
+          </tbody>
+        </table>
+      </div>
+      <div class="row">
+        {{MECHANICAL_PILLS}}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

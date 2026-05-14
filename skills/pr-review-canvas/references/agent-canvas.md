@@ -1,8 +1,8 @@
 # Agent Canvas Reference
 
-This reference defines an agent-runtime-neutral TSX canvas policy. The durable output is a single `.canvas.tsx` or runtime-equivalent `.tsx` file served through the active runtime's canvas preview path and opened directly in the in-app browser.
+This reference defines an agent-runtime-neutral HTML canvas policy. The durable output is a single `.html` file served through a local HTTP preview path and returned as a link. Prefer a link that targets the in-app browser when the runtime exposes one; otherwise return the plain local web URL.
 
-A canvas is a standalone TSX artifact the runtime compiles or renders so the user can open it beside the chat. Follow the workflow below in order.
+A canvas is a standalone HTML artifact served locally so the user can open it beside the chat. Follow the workflow below in order.
 
 ## Workflow
 
@@ -29,45 +29,56 @@ The trigger is **user intent**, not response shape. Ask: would the user benefit 
 - The answer is a short factual answer, one-off file edit, or quick clarifying question.
 - Connected tools are queried as an **intermediate step** for a different deliverable.
 
-### 2. Write the TSX canvas
+### 2. Write the HTML canvas
 
-**Location.** Prefer the active agent runtime's managed canvas directory when one exists. If no such directory exists, write outside the reviewed repository under `~/.agent-artifacts/pr-review-canvas/<workspace-slug>/<name>.canvas.tsx`. Do not dirty the reviewed repository with generated review artifacts unless the user explicitly asks. Use a descriptive kebab-case filename ending in `.canvas.tsx`, or the active runtime's required TSX extension.
+**Location.** Prefer the active agent runtime's managed artifact directory when one exists. If no such directory exists, write outside the reviewed repository under `~/.agent-artifacts/pr-review-canvas/<workspace-slug>/<name>.html`. Do not dirty the reviewed repository with generated review artifacts unless the user explicitly asks. Use a descriptive kebab-case filename ending in `.html`.
 
-**Template.** Start from `assets/pr-review-canvas-template.canvas.tsx` unless the active runtime requires a different component shape. Copy the template to the output canvas path and replace the data arrays first. Reuse its components for summary stats, required sections, diff panels, flow diagrams, trace tables, mechanical lists, risks, empty states, and shared styling. Extend it only for PR-specific needs.
+**Template.** Start from `assets/pr-review-canvas-template.html`. Copy the template to the output canvas path and replace the placeholders first. Reuse its components for summary stats, required sections, diff panels, flow diagrams, trace tables, mechanical lists, risks, empty states, and shared styling. Extend it only for PR-specific needs.
+
+The default PR review template uses plain HTML/CSS components, not TSX. Preserve
+classes such as `.grid`, `.card`, `.review-panel`, `.diff-view`, `.table-scroll`,
+and `.callout`. The expected visual theme is the reference canvas style:
+editorial serif typography, light neutral page background, flat white panels,
+thin neutral borders, restrained blue accent, and dark monospace diff panes.
+Raw compiled JSX markers such as `@__PURE__`, function source, `[object Object]`,
+or a visibly different generic web-app theme in the preview are hard failures.
+Use `scripts/serve-html.js <review.html> --port <port> --route /<name>.html`
+for local preview instead of creating a new ad hoc renderer.
 
 **File rules:**
 
-- Exactly one TSX canvas file. Never create helper files, style files, or supporting modules.
-- Import only from the active runtime's canvas SDK module when one exists. No relative imports, no npm packages, no Node built-ins.
-- Default-export the top-level component when the runtime supports React-style canvases.
-- Embed all review data inline. **No `fetch()`, no network calls, no external CDNs.**
-
-**Component discovery:** prefer built-in canvas SDK components over hand-rolled markup. The full public surface should be declared by the active runtime's SDK type definitions. Read them when you need exact exports, prop shapes, or hook signatures rather than guessing.
+- Exactly one HTML canvas file. Never create helper files, style files, or supporting modules for the artifact.
+- Embed all CSS and review data inline. **No `fetch()`, no network calls, no external CDNs.**
+- Escape all PR text and diff content as HTML. Diff lines go inside `.diff-line` spans with `added`, `removed`, or `unchanged` classes.
 
 Apply the canvas generation policy below as you write, and complete its pre-delivery self-check before returning the canvas.
 
 ### Required review sections
 
-Every PR review canvas must include these visible top-level sections in this order:
+Every PR review canvas must include these visible top-level sections in this exact order:
 
-1. **Core logic** - behavior, algorithms, state transitions, API surface, tricky business rules. Show the richest diff/context here.
-2. **Wiring & integration** - routes, dependency injection, config, call sites, app lifecycle hooks, build/test plumbing that connects the core logic.
-3. **Boilerplate & mechanical** - generated code, formatting, import churn, renames, type re-exports, project metadata. Summarize file names and stats; expand only when relevant.
-4. **Risks** - correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this concise and point each risk to the relevant section or hunk.
+1. **Reviewer Path** - the scan order through the PR.
+2. **Core Logic** - behavior, algorithms, state transitions, API surface, tricky business rules. Show the richest diff/context here. Put wiring/integration details inside this section as supporting subsections, not as a top-level group.
+3. **Risks** - a separate standalone list of correctness, regression, compatibility, migration, security, performance, observability, and test coverage risks. Keep this concise and point each risk to the relevant section or hunk.
+4. **Test Coverage** - focused automated and manual validation signals.
+5. **Boilerplate & Mechanical** - generated code, formatting, import churn, renames, type re-exports, project metadata. Summarize file names and stats; expand only when relevant. This group is always last.
 
 If one section has no entries, render it with `None identified`. Do not omit it. Other views such as summary cards, inline risk callouts, flow diagrams, or file stats are additive and must not replace these sections. If you add inline risk callouts near code, also summarize them in the top-level **Risks** section.
 
-### 3. Serve and open the canvas
+The **Risks** section must be its own visible list. Inline callouts next to code
+are supporting annotations only. For each real risk, include the category, the
+failure mode, where to review it, and the reviewer action or validation needed.
 
-Do not use `file://` links for the primary open path; many in-app browsers block them and raw TSX will not render that way.
+### 3. Serve and link the canvas
 
-After writing the TSX file:
+Do not use `file://` links for the primary open path; many in-app browsers block them.
 
-1. Start or reuse the active runtime's TSX canvas preview server.
-2. Get the browser URL for the generated canvas from that runtime or preview server.
-3. Verify the URL is reachable with an HTTP request or runtime status check.
-4. If the runtime has an in-app browser or browser automation tool, open the verified URL yourself. Do not ask the user whether they can see or access the file first.
-5. Include the verified preview URL as a Markdown link in the final response.
+After writing the HTML file:
+
+1. Start or reuse `scripts/serve-html.js`.
+2. Get the URL for the generated canvas from that preview server.
+3. If the runtime exposes an in-app-browser-targeting URL, include that as the Markdown link target. Otherwise include the plain local web URL for the rendered HTML preview.
+4. Do not open Chrome, the in-app browser, screenshots, or browser automation just to test the generated file.
 
 Example response link:
 
@@ -75,7 +86,7 @@ Example response link:
 [Open PR review canvas](http://127.0.0.1:8765/pr-review-canvas)
 ```
 
-Keep the preview server running for the session when possible. If the first port is busy, choose another free localhost port. Do not return only the path. Do not return only source code. The user must get a clickable HTTP link to the rendered TSX canvas, and the agent should have already opened that link in the in-app browser when the runtime permits it.
+Keep the preview server running for the session when possible. If the first port is busy, choose another free localhost port. Do not return only the path. Do not return only source code. The user must get a clickable link to the rendered HTML canvas, with in-app targeting preferred when available and plain localhost as the fallback.
 
 ## Design guidance
 
@@ -87,9 +98,17 @@ Not everything deserves equal treatment. Primary content gets more space, larger
 
 **Color.** Prefer runtime theme tokens when available. If none exist, use a restrained neutral palette with one accent color. Use accent color deliberately, not on everything.
 
+### Responsive containment
+
+Review canvases contain long, hostile strings: file paths, branch names, code
+lines, generated symbols, and URLs. Grids must use `minmax(0, ...)`, grid
+children must opt into `min-width: 0`, and diff/code/table blocks must scroll or
+wrap within their own panel. A long code line must not widen the main column,
+overlap a side panel, or create unreadable text on narrow screens.
+
 ### Flow diagrams
 
-Use flow diagrams when they make review faster: state transitions, request pipelines, event ordering, dependency direction, retry paths, permission gates, data transformations, or old-vs-new control flow. Keep diagrams small and close to the relevant diff. Prefer runtime DAG or flow components when available; otherwise use simple TSX/SVG primitives inside the single canvas file.
+Use flow diagrams when they make review faster: state transitions, request pipelines, event ordering, dependency direction, retry paths, permission gates, data transformations, or old-vs-new control flow. Keep diagrams small and close to the relevant diff. Use simple HTML/CSS or inline SVG primitives inside the single canvas file.
 
 Do not diagram obvious straight-line code. A weak diagram is worse than none. Diagrams are supporting material; they must sit inside or next to the relevant required section instead of replacing the section structure or the top-level **Risks** section.
 
@@ -107,71 +126,54 @@ These specific patterns produce low-quality output. If two or more are present, 
 
 ### Pre-delivery self-check
 
-Before returning the canvas link, verify:
+Before returning the canvas link, check:
 
 1. Does the layout have visual hierarchy? One thing should stand out.
 2. Is there variety in the composition? Not just a single column of uniform blocks.
-3. Are `Core logic`, `Wiring & integration`, `Boilerplate & mechanical`, and `Risks` present as visible top-level sections in that order?
+3. Are `Reviewer Path`, `Core Logic`, `Risks`, `Test Coverage`, and `Boilerplate & Mechanical` present as visible top-level sections in that order?
 4. Did you add a flow diagram only when it improves review comprehension, and does it support rather than replace a required section?
 5. Slop check: scan for the forbidden patterns above.
-6. Does the preview URL render the TSX canvas successfully?
-7. Did you open the verified preview URL in the in-app browser yourself when the runtime provides a browser tool?
-8. Did you include a clickable localhost HTTP link to the rendered canvas?
+6. Did you include a clickable link to the rendered HTML canvas, preferring an in-app-browser-targeting URL when available and falling back to localhost?
+7. Did you avoid opening a browser, taking screenshots, or running browser automation just to test the generated file?
 
 ## Introducing the canvas
 
-When you create a canvas, add a short note in your chat response telling the user you created a canvas and opened it in the in-app browser, and include the verified preview link:
+When you create a canvas, add a short note in your chat response telling the user you created a canvas, and include the rendered canvas link:
 
-- **First canvas** - if no other TSX canvases exist in the workspace's artifact directory, include one sentence explaining what a canvas is.
+- **First canvas** - if no other HTML canvases exist in the workspace's artifact directory, include one sentence explaining what a canvas is.
 - **Unsolicited canvas** - if the user did not ask for a canvas, include one sentence explaining why you chose it over plain text.
 
 Both can apply at once; one or two sentences total is enough. Skip the intro for subsequent canvases.
 
 ## Troubleshooting
 
-If a canvas appears blank or missing, first verify that the preview server is still running, the URL points to the generated canvas route, and the URL returns success. If the page renders blank, inspect the runtime diagnostics, browser console, invalid imports, missing SDK exports, missing inline data, or invalid TSX. Do not fall back to asking the user to find the file manually.
+If the user reports that a canvas appears blank or missing, first check that the preview server is still running and the URL points to the generated canvas route. Inspect runtime diagnostics, invalid HTML, missing inline data, or escaping errors. Do not open Chrome or browser automation unless the user explicitly asks for interactive debugging.
 
 ## Good example
 
-```tsx
-import { Divider, Grid, H1, H2, Stack, Stat, Table, Text } from 'agent/canvas';
-
-export default function ServiceOverview() {
-  return (
-    <Stack gap={20}>
-      <H1>Service Overview</H1>
-      <Grid columns={3} gap={16}>
-        <Stat value="6" label="Total Services" />
-        <Stat value="5" label="Healthy" tone="success" />
-        <Stat value="1" label="Degraded" tone="warning" />
-      </Grid>
-      <Divider />
-      <H2>Service Status</H2>
-      <Table
-        headers={["Service", "Status", "Uptime", "Latency"]}
-        rows={[
-          ["api-gateway", "Operational", "99.99%", "12ms"],
-          ["auth-service", "Degraded", "99.2%", "340ms"],
-        ]}
-        rowTone={[undefined, "warning"]}
-      />
-      <Text tone="secondary" size="small">
-        Auth service latency increased after the 14:30 deploy.
-      </Text>
-    </Stack>
-  );
-}
+```html
+<main class="canvas stack">
+  <section class="hero">
+    <div class="hero-copy">
+      <h1>Service Overview</h1>
+      <p class="muted">Auth service latency increased after the 14:30 deploy.</p>
+    </div>
+    <dl class="grid stats">
+      <div class="stat"><dt>Total Services</dt><dd>6</dd></div>
+      <div class="stat success"><dt>Healthy</dt><dd>5</dd></div>
+      <div class="stat warning"><dt>Degraded</dt><dd>1</dd></div>
+    </dl>
+  </section>
+</main>
 ```
 
 Stats in a grid, table directly under H2, text sections without cards.
 
 ## Bad example - do not imitate
 
-```tsx
-// BAD - every section wrapped in Card, no hierarchy, Table unnecessarily boxed
-<Stack gap={12}>
-  <Card><CardHeader>Summary</CardHeader><CardBody><Text>6 services.</Text></CardBody></Card>
-  <Card><CardHeader>Status</CardHeader><CardBody><Table headers={[...]} rows={[...]} /></CardBody></Card>
-  <Card><CardHeader>Changes</CardHeader><CardBody><Text>Latency increased.</Text></CardBody></Card>
-</Stack>
+```html
+<!-- BAD - every section wrapped in the same card, no hierarchy -->
+<section class="card">Summary</section>
+<section class="card">Status</section>
+<section class="card">Changes</section>
 ```
